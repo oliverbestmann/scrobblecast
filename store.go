@@ -46,3 +46,39 @@ func (s *Store) RecordPlay(device string, np NowPlaying, at time.Time) error {
 	)
 	return err
 }
+
+// TopSong is an aggregated play count for a track/artist pair.
+type TopSong struct {
+	Track  string
+	Artist string
+	Album  string
+	Plays  int
+}
+
+// TopSongs returns the most played tracks since the given time, ordered by
+// play count descending, limited to limit entries.
+func (s *Store) TopSongs(since time.Time, limit int) ([]TopSong, error) {
+	rows, err := s.db.Query(
+		`SELECT track, artist, album, COUNT(*) AS plays
+		 FROM plays
+		 WHERE played_at >= ?
+		 GROUP BY track, artist
+		 ORDER BY plays DESC, track ASC
+		 LIMIT ?`,
+		since, limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var songs []TopSong
+	for rows.Next() {
+		var song TopSong
+		if err := rows.Scan(&song.Track, &song.Artist, &song.Album, &song.Plays); err != nil {
+			return nil, err
+		}
+		songs = append(songs, song)
+	}
+	return songs, rows.Err()
+}

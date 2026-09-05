@@ -16,5 +16,7 @@ WORKDIR /data
 
 COPY --from=build /out/scrobblecast /usr/local/bin/scrobblecast
 
+EXPOSE 8080
+
 ENTRYPOINT ["/usr/local/bin/scrobblecast"]
 CMD ["-db", "/data/scrobblecast.db"]
